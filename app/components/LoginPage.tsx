@@ -151,7 +151,7 @@ export default function LoginPage({ onLogin, theme, onToggleTheme }: LoginPagePr
                   <div>
                     <p className="text-sm font-medium text-light-text dark:text-dark-text">Dapatkan API Key</p>
                     <p className="text-xs text-light-muted dark:text-dark-muted mt-0.5">
-                      Masukkan lisensi Anda ke halaman <a href="http://localhost:1431/" target="_blank" rel="noopener noreferrer" className="text-light-accent dark:text-dark-accent hover:underline font-medium">Login Cek Token & Cek API Key</a>, lalu copy API Key yang tersedia di dashboard Anda.
+                      Masukkan lisensi Anda ke halaman <a href="https://dash-budixai.devplay.online/" target="_blank" rel="noopener noreferrer" className="text-light-accent dark:text-dark-accent hover:underline font-medium">Login Cek Token & Cek API Key</a>, lalu copy API Key yang tersedia di dashboard Anda.
                     </p>
                   </div>
                 </div>
@@ -316,7 +316,7 @@ export default function LoginPage({ onLogin, theme, onToggleTheme }: LoginPagePr
                   </div>
                   <ExternalLink size={14} className="text-light-muted dark:text-dark-muted" />
                 </a>
-                <a href="http://localhost:1431/" target="_blank" rel="noopener noreferrer" className="w-full flex items-center justify-between px-4 py-3 rounded-xl border border-light-border dark:border-dark-border hover:bg-light-hover dark:hover:bg-dark-hover transition-colors">
+                <a href="https://dash-budixai.devplay.online/" target="_blank" rel="noopener noreferrer" className="w-full flex items-center justify-between px-4 py-3 rounded-xl border border-light-border dark:border-dark-border hover:bg-light-hover dark:hover:bg-dark-hover transition-colors">
                   <div className="flex items-center gap-2.5">
                     <BarChart3 size={16} className="text-purple-500" />
                     <div>

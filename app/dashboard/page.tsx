@@ -5,7 +5,7 @@ import { useEffect } from "react";
 export default function DashboardPage() {
   useEffect(() => {
     // Redirect langsung ke dashboard enowx
-    window.location.href = "http://localhost:1431/";
+    window.location.href = "https://dash-budixai.devplay.online/";
   }, []);
 
   return (
