@@ -72,7 +72,7 @@ export function useChat(settings: Settings) {
   const sendMessage = useCallback(
     async (content: string, chatMode: ChatMode = "normal", attachments?: Attachment[]) => {
       if ((!content.trim() && (!attachments || attachments.length === 0)) || isLoading) return;
-      if (!settings.apiKey || !settings.model) {
+      if (!settings.apiKey || !settings.baseUrl || !settings.model) {
         setError("Please configure your API Key and Model in Settings.");
         return;
       }
@@ -195,6 +195,7 @@ export function useChat(settings: Settings) {
           body: JSON.stringify({
             messages: apiMessages,
             apiKey: settings.apiKey,
+            baseUrl: settings.baseUrl,
             model: settings.model,
             temperature: settings.temperature,
             maxTokens: settings.maxTokens,

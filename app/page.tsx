@@ -57,8 +57,8 @@ export default function Home() {
   if (!isConfigured) {
     return (
       <LoginPage
-        onLogin={(apiKey) => {
-          updateSettings({ apiKey, model: settings.model || "auto" });
+        onLogin={(apiKey, baseUrl) => {
+          updateSettings({ apiKey, baseUrl, model: settings.model || "auto" });
         }}
         theme={theme}
         onToggleTheme={toggleTheme}

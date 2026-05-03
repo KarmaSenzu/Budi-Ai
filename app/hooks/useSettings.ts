@@ -27,7 +27,7 @@ export function useSettings() {
     saveSettings(DEFAULT_SETTINGS);
   }, []);
 
-  const isConfigured = Boolean(settings.apiKey && settings.model);
+  const isConfigured = Boolean(settings.apiKey && settings.baseUrl && settings.model);
 
   return { settings, updateSettings, resetSettings, isConfigured, isLoaded };
 }

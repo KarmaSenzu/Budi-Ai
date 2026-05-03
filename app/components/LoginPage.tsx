@@ -4,33 +4,44 @@ import { useState } from "react";
 import { Key, ShoppingCart, ExternalLink, Eye, EyeOff, ArrowRight, Shield, Zap, MessageSquare, BarChart3, HelpCircle, CheckCircle2, Info, ChevronDown } from "lucide-react";
 
 interface LoginPageProps {
-  onLogin: (apiKey: string) => void;
+  onLogin: (apiKey: string, baseUrl: string) => void;
   theme: "dark" | "light";
   onToggleTheme: () => void;
 }
 
 export default function LoginPage({ onLogin, theme, onToggleTheme }: LoginPageProps) {
   const [apiKey, setApiKey] = useState("");
+  const [baseUrl, setBaseUrl] = useState("");
   const [showKey, setShowKey] = useState(false);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<"cara" | "info">("cara");
 
-  const validateApiKey = (key: string): string | null => {
-    const trimmed = key.trim();
+  const validate = (): string | null => {
+    const trimmedKey = apiKey.trim();
+    const trimmedUrl = baseUrl.trim();
 
-    if (!trimmed) {
+    if (!trimmedKey) {
       return "Masukkan API Key Anda.";
     }
 
     // Detect if user entered a license key instead of API Key
-    if (/^[A-Z]+-[A-Z0-9]{5}-[A-Z0-9]{5}-[A-Z0-9]{5}-[A-Z0-9]{5}$/i.test(trimmed)) {
+    if (/^[A-Z]+-[A-Z0-9]{5}-[A-Z0-9]{5}-[A-Z0-9]{5}-[A-Z0-9]{5}$/i.test(trimmedKey)) {
       return "Anda memasukkan Lisensi, bukan API Key. Masukkan lisensi Anda ke Dashboard terlebih dahulu untuk mendapatkan API Key.";
     }
 
     // Validate API Key format: must start with "enx-" followed by 64 hex characters
-    if (!/^enx-[a-f0-9]{64}$/.test(trimmed)) {
+    if (!/^enx-[a-f0-9]{64}$/.test(trimmedKey)) {
       return "Format API Key tidak valid. API Key harus diawali dengan \"enx-\" diikuti 64 karakter hex.";
+    }
+
+    if (!trimmedUrl) {
+      return "Masukkan Base URL server enowxAI Anda.";
+    }
+
+    // Validate URL format
+    if (!/^https?:\/\/.+/i.test(trimmedUrl)) {
+      return "Format Base URL tidak valid. Harus diawali dengan http:// atau https://";
     }
 
     return null;
@@ -39,7 +50,7 @@ export default function LoginPage({ onLogin, theme, onToggleTheme }: LoginPagePr
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const validationError = validateApiKey(apiKey);
+    const validationError = validate();
     if (validationError) {
       setError(validationError);
       return;
@@ -48,7 +59,7 @@ export default function LoginPage({ onLogin, theme, onToggleTheme }: LoginPagePr
     setError("");
     setIsLoading(true);
     setTimeout(() => {
-      onLogin(apiKey.trim());
+      onLogin(apiKey.trim(), baseUrl.trim().replace(/\/+$/, ""));
       setIsLoading(false);
     }, 500);
   };
@@ -151,7 +162,7 @@ export default function LoginPage({ onLogin, theme, onToggleTheme }: LoginPagePr
                   <div>
                     <p className="text-sm font-medium text-light-text dark:text-dark-text">Dapatkan API Key</p>
                     <p className="text-xs text-light-muted dark:text-dark-muted mt-0.5">
-                      Masukkan lisensi Anda ke halaman <a href="https://dash-budixai.devplay.online/" target="_blank" rel="noopener noreferrer" className="text-light-accent dark:text-dark-accent hover:underline font-medium">Login Cek Token & Cek API Key</a>, lalu copy API Key yang tersedia di dashboard Anda.
+                      Masukkan lisensi Anda ke halaman <a href="http://localhost:1431/" target="_blank" rel="noopener noreferrer" className="text-light-accent dark:text-dark-accent hover:underline font-medium">Login Cek Token & Cek API Key</a>, lalu copy API Key yang tersedia di dashboard Anda.
                     </p>
                   </div>
                 </div>
@@ -264,6 +275,17 @@ export default function LoginPage({ onLogin, theme, onToggleTheme }: LoginPagePr
 
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
+                  <label className="block text-sm font-medium text-light-text dark:text-dark-text mb-2">Base URL</label>
+                  <input
+                    type="text"
+                    value={baseUrl}
+                    onChange={(e) => { setBaseUrl(e.target.value); setError(""); }}
+                    placeholder="http://your-vps-ip:1430/v1"
+                    className="w-full px-4 py-3 rounded-xl bg-light-input dark:bg-dark-input border border-light-border dark:border-dark-border text-light-text dark:text-dark-text focus:outline-none focus:border-light-accent dark:focus:border-dark-accent transition-colors font-mono text-sm"
+                  />
+                  <p className="text-[10px] text-light-muted dark:text-dark-muted mt-1">Alamat server enowxAI Anda (contoh: http://ip-vps:1430/v1)</p>
+                </div>
+                <div>
                   <label className="block text-sm font-medium text-light-text dark:text-dark-text mb-2">API Key</label>
                   <div className="relative">
                     <input
@@ -282,7 +304,7 @@ export default function LoginPage({ onLogin, theme, onToggleTheme }: LoginPagePr
                 </div>
                 <button
                   type="submit"
-                  disabled={isLoading || !apiKey.trim()}
+                  disabled={isLoading || !apiKey.trim() || !baseUrl.trim()}
                   className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-gradient-to-r from-blue-500 to-cyan-500 text-white font-medium hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   {isLoading ? (
@@ -316,7 +338,7 @@ export default function LoginPage({ onLogin, theme, onToggleTheme }: LoginPagePr
                   </div>
                   <ExternalLink size={14} className="text-light-muted dark:text-dark-muted" />
                 </a>
-                <a href="https://dash-budixai.devplay.online/" target="_blank" rel="noopener noreferrer" className="w-full flex items-center justify-between px-4 py-3 rounded-xl border border-light-border dark:border-dark-border hover:bg-light-hover dark:hover:bg-dark-hover transition-colors">
+                <a href="http://localhost:1431/" target="_blank" rel="noopener noreferrer" className="w-full flex items-center justify-between px-4 py-3 rounded-xl border border-light-border dark:border-dark-border hover:bg-light-hover dark:hover:bg-dark-hover transition-colors">
                   <div className="flex items-center gap-2.5">
                     <BarChart3 size={16} className="text-purple-500" />
                     <div>

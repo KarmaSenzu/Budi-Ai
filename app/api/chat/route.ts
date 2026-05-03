@@ -2,25 +2,22 @@ import { NextRequest } from "next/server";
 
 export const runtime = "edge";
 
-// Internal AI server URL - configured via environment variable
-// In production: set ENOWX_API_URL in your .env.local
-// Default: proxies to localhost enowxai server
-const AI_SERVER_URL = process.env.ENOWX_API_URL || "http://localhost:1430/v1";
-
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { messages, apiKey, model, temperature, maxTokens, stream, chatMode } = body;
+    const { messages, apiKey, baseUrl, model, temperature, maxTokens, stream, chatMode } = body;
 
     // Validate required fields
-    if (!apiKey || !model || !messages) {
+    if (!apiKey || !baseUrl || !model || !messages) {
       return new Response(
-        JSON.stringify({ error: "Missing required fields: apiKey, model, messages" }),
+        JSON.stringify({ error: "Missing required fields: apiKey, baseUrl, model, messages" }),
         { status: 400, headers: { "Content-Type": "application/json" } }
       );
     }
 
-    const endpoint = `${AI_SERVER_URL}/chat/completions`;
+    // Normalize base URL and build endpoint
+    const normalizedBaseUrl = baseUrl.replace(/\/+$/, "");
+    const endpoint = `${normalizedBaseUrl}/chat/completions`;
 
     // Build the request body
     const requestBody: Record<string, unknown> = {
