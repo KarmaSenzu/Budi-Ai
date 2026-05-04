@@ -227,6 +227,7 @@ interface ChatInputProps {
   disabled?: boolean;
   currentModel: string;
   onModelChange: (model: string) => void;
+  fetchedModels?: string[];
 }
 
 export default function ChatInput({
@@ -236,6 +237,7 @@ export default function ChatInput({
   disabled,
   currentModel,
   onModelChange,
+  fetchedModels = [],
 }: ChatInputProps) {
   const [input, setInput] = useState("");
   const [showModelPicker, setShowModelPicker] = useState(false);
@@ -333,8 +335,21 @@ export default function ChatInput({
   const currentInfo = findModelTier(currentModel);
   const currentDisplayName = currentModel || "Select model";
 
+  // Build dynamic "Your Models" tier from fetched models
+  const yourModelsTier: TierInfo | null = fetchedModels.length > 0 ? {
+    label: "Your Models",
+    gradient: "from-green-500 to-emerald-500",
+    badge: "bg-green-500/15 text-green-600 dark:text-green-400",
+    abbr: "YM",
+    locked: false,
+    models: fetchedModels.map((id) => ({ id, description: "Available on your server" })),
+  } : null;
+
+  // Combine fetched models tier with hardcoded tiers
+  const allTiers = yourModelsTier ? [yourModelsTier, ...TIERS] : TIERS;
+
   // Filter tiers by search
-  const filteredTiers = TIERS.map((tier) => ({
+  const filteredTiers = allTiers.map((tier) => ({
     ...tier,
     models: modelSearch
       ? tier.models.filter(

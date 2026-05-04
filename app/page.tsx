@@ -33,6 +33,7 @@ export default function Home() {
   const [showSettings, setShowSettings] = useState(false);
   const [showModels, setShowModels] = useState(false);
   const [mode, setMode] = useState<AppMode>("chat");
+  const [fetchedModels, setFetchedModels] = useState<string[]>([]);
 
   // Load conversations on mount
   useEffect(() => {
@@ -40,6 +41,41 @@ export default function Home() {
       loadConversations();
     }
   }, [isLoaded, loadConversations]);
+
+  // Fetch models from user's server (client-side direct)
+  useEffect(() => {
+    if (isConfigured && settings.baseUrl && settings.apiKey) {
+      const normalizedUrl = settings.baseUrl.replace(/\/+$/, "");
+      fetch(`${normalizedUrl}/models`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${settings.apiKey}`,
+          "Content-Type": "application/json",
+        },
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          let models: string[] = [];
+          if (data.data && Array.isArray(data.data)) {
+            models = data.data
+              .map((m: any) => m.id || m.name || "")
+              .filter((id: string) => id.length > 0)
+              .sort();
+          } else if (Array.isArray(data)) {
+            models = data
+              .map((m: any) => (typeof m === "string" ? m : m.id || m.name || ""))
+              .filter((id: string) => id.length > 0)
+              .sort();
+          }
+          if (models.length > 0) {
+            setFetchedModels(models);
+          }
+        })
+        .catch(() => {
+          // Silently fail - will use hardcoded models
+        });
+    }
+  }, [isConfigured, settings.baseUrl, settings.apiKey]);
 
   // Prevent flash of unstyled content
   if (!mounted || !isLoaded) {
@@ -107,6 +143,7 @@ export default function Home() {
               disabled={!isConfigured}
               currentModel={settings.model}
               onModelChange={(model) => updateSettings({ model })}
+              fetchedModels={fetchedModels}
             />
           </>
         ) : (
