@@ -14,6 +14,7 @@ export interface Attachment {
   mimeType: string;
   base64: string;
   size: number;
+  extractedText?: string; // For PDF/DOCX files - extracted text content
 }
 
 export interface Message {

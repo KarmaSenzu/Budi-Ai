@@ -104,10 +104,18 @@ export default function MessageBubble({ message, isStreaming }: MessageBubblePro
                 </div>
               ) : (
                 <div key={att.id} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-light-input dark:bg-dark-input border border-light-border dark:border-dark-border">
-                  <FileText size={16} className="text-light-accent dark:text-dark-accent flex-shrink-0" />
+                  <FileText size={16} className={`flex-shrink-0 ${
+                    att.name.endsWith(".pdf") ? "text-red-500" :
+                    (att.name.endsWith(".docx") || att.name.endsWith(".doc")) ? "text-blue-500" :
+                    "text-light-accent dark:text-dark-accent"
+                  }`} />
                   <div className="min-w-0">
                     <p className="text-xs font-medium text-light-text dark:text-dark-text truncate">{att.name}</p>
-                    <p className="text-[9px] text-light-muted dark:text-dark-muted">{(att.size / 1024).toFixed(1)} KB</p>
+                    <p className="text-[9px] text-light-muted dark:text-dark-muted">
+                      {(att.size / 1024).toFixed(1)} KB
+                      {att.name.endsWith(".pdf") && " \u00B7 PDF"}
+                      {(att.name.endsWith(".docx") || att.name.endsWith(".doc")) && " \u00B7 Word"}
+                    </p>
                   </div>
                 </div>
               )

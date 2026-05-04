@@ -155,9 +155,21 @@ export function useChat(settings: Settings) {
                 });
               } else {
                 // For files, include as text content with file info
+                let fileContent: string;
+                if (att.extractedText) {
+                  // Use extracted text for PDF/DOCX files
+                  fileContent = att.extractedText;
+                } else {
+                  // For plain text files, decode base64
+                  try {
+                    fileContent = atob(att.base64);
+                  } catch {
+                    fileContent = "[Error: Gagal membaca konten file]";
+                  }
+                }
                 contentParts.push({
                   type: "text",
-                  text: `[File: ${att.name} (${att.mimeType}, ${(att.size / 1024).toFixed(1)}KB)]\n\nContent:\n${atob(att.base64)}`,
+                  text: `[File: ${att.name} (${att.mimeType}, ${(att.size / 1024).toFixed(1)}KB)]\n\nContent:\n${fileContent}`,
                 });
               }
             }

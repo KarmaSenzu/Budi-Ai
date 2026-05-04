@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, KeyboardEvent } from "react";
 import { Send, Square, ChevronDown, Zap, Sparkles, Bot, Waves, Code2, Palette, Check, Lock, Brain, Search, ImagePlus, Paperclip, X, FileText } from "lucide-react";
 import { ChatMode, Attachment } from "@/lib/types";
 import { v4 as uuidv4 } from "uuid";
+import mammoth from "mammoth";
 
 // ─── Model & Tier Types ───────────────────────────────────────────
 
@@ -287,17 +288,64 @@ export default function ChatInput({
     }
   };
 
+  // Extract text from PDF file (dynamic import to avoid SSR issues)
+  const extractPdfText = async (arrayBuffer: ArrayBuffer): Promise<string> => {
+    try {
+      const pdfjsLib = await import("pdfjs-dist");
+      pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      const textParts: string[] = [];
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const textContent = await page.getTextContent();
+        const pageText = textContent.items
+          .map((item: any) => item.str)
+          .join(" ");
+        if (pageText.trim()) {
+          textParts.push(`--- Page ${i} ---\n${pageText}`);
+        }
+      }
+      return textParts.join("\n\n");
+    } catch (err) {
+      console.error("Error extracting PDF text:", err);
+      return "[Error: Gagal membaca konten PDF]";
+    }
+  };
+
+  // Extract text from DOCX file
+  const extractDocxText = async (arrayBuffer: ArrayBuffer): Promise<string> => {
+    try {
+      const result = await mammoth.extractRawText({ arrayBuffer });
+      return result.value;
+    } catch (err) {
+      console.error("Error extracting DOCX text:", err);
+      return "[Error: Gagal membaca konten DOCX]";
+    }
+  };
+
   // Handle file/image upload
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, type: "image" | "file") => {
     const files = e.target.files;
     if (!files) return;
 
-    Array.from(files).forEach((file) => {
-      // Limit: 10MB for images, 5MB for files
-      const maxSize = type === "image" ? 10 * 1024 * 1024 : 5 * 1024 * 1024;
+    Array.from(files).forEach(async (file) => {
+      // Limit: 10MB for images, 10MB for PDF/DOCX, 5MB for other files
+      const isPdfOrDocx = file.name.endsWith(".pdf") || file.name.endsWith(".docx") || file.name.endsWith(".doc");
+      const maxSize = type === "image" ? 10 * 1024 * 1024 : isPdfOrDocx ? 10 * 1024 * 1024 : 5 * 1024 * 1024;
       if (file.size > maxSize) {
-        alert(`File "${file.name}" terlalu besar. Maksimal ${type === "image" ? "10MB" : "5MB"}.`);
+        alert(`File "${file.name}" terlalu besar. Maksimal ${type === "image" ? "10MB" : isPdfOrDocx ? "10MB" : "5MB"}.`);
         return;
+      }
+
+      let extractedText: string | undefined;
+
+      // Extract text from PDF/DOCX files
+      if (file.name.endsWith(".pdf")) {
+        const arrayBuffer = await file.arrayBuffer();
+        extractedText = await extractPdfText(arrayBuffer);
+      } else if (file.name.endsWith(".docx") || file.name.endsWith(".doc")) {
+        const arrayBuffer = await file.arrayBuffer();
+        extractedText = await extractDocxText(arrayBuffer);
       }
 
       const reader = new FileReader();
@@ -307,9 +355,10 @@ export default function ChatInput({
           id: uuidv4(),
           type,
           name: file.name,
-          mimeType: file.type,
+          mimeType: file.type || (file.name.endsWith(".pdf") ? "application/pdf" : file.name.endsWith(".docx") ? "application/vnd.openxmlformats-officedocument.wordprocessingml.document" : "application/octet-stream"),
           base64,
           size: file.size,
+          extractedText,
         };
         setAttachments((prev) => [...prev, newAttachment]);
       };
@@ -530,7 +579,11 @@ export default function ChatInput({
                     </div>
                   ) : (
                     <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-light-input dark:bg-dark-input border border-light-border dark:border-dark-border">
-                      <FileText size={12} className="text-light-accent dark:text-dark-accent" />
+                      <FileText size={12} className={
+                        att.name.endsWith(".pdf") ? "text-red-500" :
+                        (att.name.endsWith(".docx") || att.name.endsWith(".doc")) ? "text-blue-500" :
+                        "text-light-accent dark:text-dark-accent"
+                      } />
                       <span className="text-[10px] text-light-text dark:text-dark-text max-w-[80px] truncate">{att.name}</span>
                     </div>
                   )}
@@ -579,7 +632,7 @@ export default function ChatInput({
             <input
               ref={fileInputRef}
               type="file"
-              accept=".txt,.md,.csv,.json,.xml,.html,.css,.js,.ts,.py,.java,.c,.cpp,.pdf"
+              accept=".txt,.md,.csv,.json,.xml,.html,.css,.js,.ts,.py,.java,.c,.cpp,.pdf,.doc,.docx"
               multiple
               className="hidden"
               onChange={(e) => handleFileUpload(e, "file")}
