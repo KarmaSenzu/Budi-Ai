@@ -189,25 +189,53 @@ export function useChat(settings: Settings) {
       abortControllerRef.current = abortController;
 
       try {
-        const response = await fetch("/api/chat", {
+        // Direct fetch from browser to user's enowxAI server (client-side)
+        const normalizedBaseUrl = settings.baseUrl.replace(/\/+$/, "");
+        const endpoint = `${normalizedBaseUrl}/chat/completions`;
+
+        // Build request body
+        const requestBody: Record<string, unknown> = {
+          model: settings.model,
+          messages: apiMessages,
+          stream: true,
+        };
+
+        // Apply mode-specific settings
+        if (chatMode === "thinking") {
+          requestBody.temperature = 1;
+          requestBody.max_tokens = settings.maxTokens ?? 16384;
+          requestBody.thinking = { type: "enabled", budget_tokens: 10000 };
+          requestBody.include_reasoning = true;
+        } else if (chatMode === "deep-research") {
+          requestBody.temperature = 0.3;
+          requestBody.max_tokens = settings.maxTokens ?? 32768;
+          requestBody.thinking = { type: "enabled", budget_tokens: 20000 };
+          requestBody.include_reasoning = true;
+        } else {
+          requestBody.temperature = settings.temperature ?? 0.7;
+          requestBody.max_tokens = settings.maxTokens ?? 4096;
+        }
+
+        const response = await fetch(endpoint, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            messages: apiMessages,
-            apiKey: settings.apiKey,
-            baseUrl: settings.baseUrl,
-            model: settings.model,
-            temperature: settings.temperature,
-            maxTokens: settings.maxTokens,
-            stream: true,
-            chatMode,
-          }),
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${settings.apiKey}`,
+          },
+          body: JSON.stringify(requestBody),
           signal: abortController.signal,
         });
 
         if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || `HTTP ${response.status}`);
+          const errorText = await response.text();
+          let errorMessage: string;
+          try {
+            const errorJson = JSON.parse(errorText);
+            errorMessage = errorJson.error?.message || errorJson.error || errorJson.message || errorText;
+          } catch {
+            errorMessage = errorText;
+          }
+          throw new Error(`Error (${response.status}): ${errorMessage}`);
         }
 
         if (!response.body) {
