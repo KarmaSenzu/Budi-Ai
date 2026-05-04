@@ -48,7 +48,7 @@ export const DEFAULT_SETTINGS: Settings = {
   baseUrl: "",
   model: "auto",
   temperature: 0.7,
-  maxTokens: 4096,
+  maxTokens: 16384,
   systemPrompt: "You are a helpful assistant.",
 };
 

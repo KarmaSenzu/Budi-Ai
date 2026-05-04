@@ -26,20 +26,28 @@ export async function POST(req: NextRequest) {
       stream: stream ?? true,
     };
 
+    // Detect if messages contain file attachments
+    const hasFileAttachments = messages.some(
+      (m: any) => Array.isArray(m.content) && m.content.some((p: any) => p.type === "text" && p.text?.startsWith("[File:"))
+    );
+    const fileMinTokens = hasFileAttachments ? 16384 : 0;
+
     // Apply mode-specific settings
     if (chatMode === "thinking") {
       requestBody.temperature = 1;
-      requestBody.max_tokens = maxTokens ?? 16384;
+      requestBody.max_tokens = Math.max(16384, fileMinTokens, maxTokens || 16384);
       requestBody.thinking = { type: "enabled", budget_tokens: 10000 };
       requestBody.include_reasoning = true;
     } else if (chatMode === "deep-research") {
       requestBody.temperature = 0.3;
-      requestBody.max_tokens = maxTokens ?? 32768;
+      requestBody.max_tokens = Math.max(32768, fileMinTokens, maxTokens || 32768);
       requestBody.thinking = { type: "enabled", budget_tokens: 20000 };
       requestBody.include_reasoning = true;
     } else {
       requestBody.temperature = temperature ?? 0.7;
-      requestBody.max_tokens = maxTokens ?? 4096;
+      requestBody.max_tokens = hasFileAttachments
+        ? Math.max(fileMinTokens, maxTokens || 16384)
+        : (maxTokens || 16384);
     }
 
     const providerResponse = await fetch(endpoint, {

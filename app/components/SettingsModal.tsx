@@ -166,11 +166,14 @@ export default function SettingsModal({ isOpen, onClose, settings, onSave, onRes
                 <input
                   type="number"
                   value={localSettings.maxTokens}
-                  onChange={(e) => setLocalSettings((prev) => ({ ...prev, maxTokens: parseInt(e.target.value) || 4096 }))}
+                  onChange={(e) => setLocalSettings((prev) => ({ ...prev, maxTokens: parseInt(e.target.value) || 16384 }))}
                   min={1}
                   max={128000}
                   className="w-full px-3 py-2.5 rounded-lg bg-light-input dark:bg-dark-input border border-light-border dark:border-dark-border text-light-text dark:text-dark-text focus:outline-none focus:border-light-accent dark:focus:border-dark-accent transition-colors"
                 />
+                <p className="text-[10px] text-light-muted dark:text-dark-muted mt-1">
+                  Jumlah maksimal token untuk respons AI. Gunakan nilai lebih tinggi (16384+) untuk analisa file/dokumen panjang. Saat mengupload file, minimum 16384 token akan otomatis digunakan.
+                </p>
               </div>
             </>
           )}

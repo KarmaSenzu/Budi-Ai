@@ -213,19 +213,29 @@ export function useChat(settings: Settings) {
         };
 
         // Apply mode-specific settings
+        // Determine if message has file attachments (needs more tokens for full analysis)
+        const hasFileAttachments = apiMessages.some(
+          (m: any) => Array.isArray(m.content) && m.content.some((p: any) => p.type === "text" && p.text?.startsWith("[File:"))
+        );
+        // Minimum tokens for file analysis to prevent cutoff
+        const fileMinTokens = hasFileAttachments ? 16384 : 0;
+
         if (chatMode === "thinking") {
           requestBody.temperature = 1;
-          requestBody.max_tokens = settings.maxTokens ?? 16384;
+          requestBody.max_tokens = Math.max(16384, fileMinTokens, settings.maxTokens || 16384);
           requestBody.thinking = { type: "enabled", budget_tokens: 10000 };
           requestBody.include_reasoning = true;
         } else if (chatMode === "deep-research") {
           requestBody.temperature = 0.3;
-          requestBody.max_tokens = settings.maxTokens ?? 32768;
+          requestBody.max_tokens = Math.max(32768, fileMinTokens, settings.maxTokens || 32768);
           requestBody.thinking = { type: "enabled", budget_tokens: 20000 };
           requestBody.include_reasoning = true;
         } else {
           requestBody.temperature = settings.temperature ?? 0.7;
-          requestBody.max_tokens = settings.maxTokens ?? 4096;
+          // For file attachments, use at least 16384 tokens to ensure full analysis
+          requestBody.max_tokens = hasFileAttachments
+            ? Math.max(fileMinTokens, settings.maxTokens || 16384)
+            : (settings.maxTokens || 4096);
         }
 
         const response = await fetch(endpoint, {
