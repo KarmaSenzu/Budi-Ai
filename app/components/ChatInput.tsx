@@ -328,24 +328,49 @@ export default function ChatInput({
     const files = e.target.files;
     if (!files) return;
 
+    const textExtensions = [".txt", ".md", ".csv", ".json", ".xml", ".html", ".css", ".js", ".ts", ".py", ".java", ".c", ".cpp", ".rtf", ".log", ".yml", ".yaml", ".toml", ".ini", ".cfg", ".sh", ".bat"];
+
     Array.from(files).forEach(async (file) => {
-      // Limit: 10MB for images, 10MB for PDF/DOCX, 5MB for other files
-      const isPdfOrDocx = file.name.endsWith(".pdf") || file.name.endsWith(".docx") || file.name.endsWith(".doc");
-      const maxSize = type === "image" ? 10 * 1024 * 1024 : isPdfOrDocx ? 10 * 1024 * 1024 : 5 * 1024 * 1024;
+      // Max 20MB for all files
+      const maxSize = 20 * 1024 * 1024;
       if (file.size > maxSize) {
-        alert(`File "${file.name}" terlalu besar. Maksimal ${type === "image" ? "10MB" : isPdfOrDocx ? "10MB" : "5MB"}.`);
+        alert(`File "${file.name}" terlalu besar. Maksimal 20MB.`);
         return;
       }
 
       let extractedText: string | undefined;
+      const fileName = file.name.toLowerCase();
 
-      // Extract text from PDF/DOCX files
-      if (file.name.endsWith(".pdf")) {
+      // Extract text from PDF files
+      if (fileName.endsWith(".pdf")) {
         const arrayBuffer = await file.arrayBuffer();
         extractedText = await extractPdfText(arrayBuffer);
-      } else if (file.name.endsWith(".docx") || file.name.endsWith(".doc")) {
+      }
+      // Extract text from DOCX files
+      else if (fileName.endsWith(".docx") || fileName.endsWith(".doc")) {
         const arrayBuffer = await file.arrayBuffer();
         extractedText = await extractDocxText(arrayBuffer);
+      }
+      // Read plain text files directly
+      else if (textExtensions.some(ext => fileName.endsWith(ext))) {
+        const text = await file.text();
+        extractedText = text;
+      }
+
+      // Determine mime type
+      let mimeType = file.type;
+      if (!mimeType) {
+        if (fileName.endsWith(".pdf")) mimeType = "application/pdf";
+        else if (fileName.endsWith(".docx")) mimeType = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+        else if (fileName.endsWith(".doc")) mimeType = "application/msword";
+        else if (fileName.endsWith(".zip")) mimeType = "application/zip";
+        else if (fileName.endsWith(".rar")) mimeType = "application/x-rar-compressed";
+        else if (fileName.endsWith(".7z")) mimeType = "application/x-7z-compressed";
+        else if (fileName.endsWith(".mp4")) mimeType = "video/mp4";
+        else if (fileName.endsWith(".mp3")) mimeType = "audio/mpeg";
+        else if (fileName.endsWith(".exe")) mimeType = "application/x-msdownload";
+        else if (fileName.endsWith(".apk")) mimeType = "application/vnd.android.package-archive";
+        else mimeType = "application/octet-stream";
       }
 
       const reader = new FileReader();
@@ -355,7 +380,7 @@ export default function ChatInput({
           id: uuidv4(),
           type,
           name: file.name,
-          mimeType: file.type || (file.name.endsWith(".pdf") ? "application/pdf" : file.name.endsWith(".docx") ? "application/vnd.openxmlformats-officedocument.wordprocessingml.document" : "application/octet-stream"),
+          mimeType,
           base64,
           size: file.size,
           extractedText,
@@ -582,6 +607,10 @@ export default function ChatInput({
                       <FileText size={12} className={
                         att.name.endsWith(".pdf") ? "text-red-500" :
                         (att.name.endsWith(".docx") || att.name.endsWith(".doc")) ? "text-blue-500" :
+                        (att.name.endsWith(".zip") || att.name.endsWith(".rar") || att.name.endsWith(".7z")) ? "text-yellow-500" :
+                        (att.name.endsWith(".mp4") || att.name.endsWith(".mkv") || att.name.endsWith(".avi") || att.name.endsWith(".mov")) ? "text-purple-500" :
+                        (att.name.endsWith(".mp3") || att.name.endsWith(".wav") || att.name.endsWith(".ogg") || att.name.endsWith(".flac")) ? "text-green-500" :
+                        (att.name.endsWith(".exe") || att.name.endsWith(".apk")) ? "text-orange-500" :
                         "text-light-accent dark:text-dark-accent"
                       } />
                       <span className="text-[10px] text-light-text dark:text-dark-text max-w-[80px] truncate">{att.name}</span>
@@ -632,7 +661,7 @@ export default function ChatInput({
             <input
               ref={fileInputRef}
               type="file"
-              accept=".txt,.md,.csv,.json,.xml,.html,.css,.js,.ts,.py,.java,.c,.cpp,.pdf,.doc,.docx"
+              accept=".txt,.md,.csv,.json,.xml,.html,.css,.js,.ts,.py,.java,.c,.cpp,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.rtf,.odt,.jpg,.jpeg,.png,.gif,.bmp,.svg,.webp,.mp4,.mkv,.avi,.mov,.wmv,.flv,.webm,.mp3,.wav,.ogg,.flac,.aac,.wma,.zip,.rar,.7z,.tar,.gz,.bz2,.exe,.apk,.dmg,.iso,.bin"
               multiple
               className="hidden"
               onChange={(e) => handleFileUpload(e, "file")}
