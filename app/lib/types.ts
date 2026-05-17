@@ -23,6 +23,10 @@ export interface Message {
   content: string;
   attachments?: Attachment[];
   timestamp: number;
+  // Model identifier that produced this message (set for `assistant` role).
+  // Optional so old messages persisted before this field was introduced
+  // continue to load without crashing.
+  model?: string;
 }
 
 export interface Conversation {
@@ -49,17 +53,9 @@ export const DEFAULT_SETTINGS: Settings = {
   model: "auto",
   temperature: 0.7,
   maxTokens: 16384,
-  systemPrompt: "You are a helpful assistant.",
+  systemPrompt:
+    "Kamu adalah asisten AI yang membantu user. Jika user menanyakan model AI apa yang sedang kamu jalankan (misal: \"kamu model apa?\", \"identitas teknismu apa?\", \"AI apa kamu?\"), JAWAB DENGAN JUJUR sesuai model identifier yang kamu tahu (mis. claude-sonnet-4-6, gpt-4o, deepseek-chat, dll). Jangan mengelak, jangan berkata kamu adalah \"Kiro\" atau asisten generic tanpa identitas. Identitas teknis ini penting untuk user yang sedang menguji routing AI.",
 };
-
-export const PRESET_PROVIDERS = [
-  { name: "OpenAI", baseUrl: "https://api.openai.com/v1", models: ["gpt-4o", "gpt-4o-mini", "gpt-4-turbo", "gpt-4", "gpt-3.5-turbo"] },
-  { name: "Anthropic (via OpenAI-compatible)", baseUrl: "https://api.anthropic.com/v1", models: ["claude-3-5-sonnet-20241022", "claude-3-haiku-20240307"] },
-  { name: "Groq", baseUrl: "https://api.groq.com/openai/v1", models: ["llama-3.1-70b-versatile", "llama-3.1-8b-instant", "mixtral-8x7b-32768"] },
-  { name: "OpenRouter", baseUrl: "https://openrouter.ai/api/v1", models: ["openai/gpt-4o", "anthropic/claude-3.5-sonnet", "google/gemini-pro-1.5"] },
-  { name: "Together AI", baseUrl: "https://api.together.xyz/v1", models: ["meta-llama/Llama-3-70b-chat-hf", "mistralai/Mixtral-8x7B-Instruct-v0.1"] },
-  { name: "Custom", baseUrl: "", models: [] },
-];
 
 // Image Generation Types
 export interface ImageSettings {

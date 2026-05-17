@@ -5,7 +5,14 @@ import { v4 as uuidv4 } from "uuid";
 import { Message, Conversation, Settings, ChatMode, Attachment } from "@/lib/types";
 import { saveConversation, getConversations, deleteConversation as deleteConv, saveConversations } from "@/lib/storage";
 
-export function useChat(settings: Settings) {
+export interface UseChatOptions {
+  // When true, the server has baked-in AI_API_KEY + AI_BASE_URL via env, so
+  // we no longer require the user to have supplied them via Settings/Login.
+  serverManaged?: boolean;
+}
+
+export function useChat(settings: Settings, options: UseChatOptions = {}) {
+  const { serverManaged = false } = options;
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -72,7 +79,13 @@ export function useChat(settings: Settings) {
   const sendMessage = useCallback(
     async (content: string, chatMode: ChatMode = "normal", attachments?: Attachment[]) => {
       if ((!content.trim() && (!attachments || attachments.length === 0)) || isLoading) return;
-      if (!settings.apiKey || !settings.baseUrl || !settings.model) {
+      // In server-managed mode the API key/baseUrl come from server env, so
+      // we only require the user to have picked a model. In legacy mode we
+      // still require all three locally.
+      const haveCreds = serverManaged
+        ? Boolean(settings.model)
+        : Boolean(settings.apiKey && settings.baseUrl && settings.model);
+      if (!haveCreds) {
         setError("Please configure your API Key and Model in Settings.");
         return;
       }
@@ -125,17 +138,16 @@ export function useChat(settings: Settings) {
       const conv = currentConversations.find((c) => c.id === convId)!;
       const apiMessages = [];
 
-      // Build system prompt based on mode
+      // Build system prompt based on mode. The actual prepending now happens
+      // in /api/chat/route.ts (the single source of truth) — we only forward
+      // the assembled text via the `systemPrompt` body field below.
       let systemContent = settings.systemPrompt || "";
       if (chatMode === "thinking") {
         systemContent += "\n\nIMPORTANT: Show your reasoning process step by step. Wrap your thinking in <think>...</think> tags before giving your final answer. Think carefully and thoroughly.";
       } else if (chatMode === "deep-research") {
         systemContent += "\n\nIMPORTANT: You are in Deep Research mode. Conduct thorough, in-depth analysis. Wrap your research reasoning in <think>...</think> tags. Consider multiple perspectives, cite sources when possible, analyze pros and cons, and provide a comprehensive, well-structured response. Be extremely detailed and thorough.";
       }
-
-      if (systemContent.trim()) {
-        apiMessages.push({ role: "system", content: systemContent.trim() });
-      }
+      systemContent = systemContent.trim();
 
       apiMessages.push(
         ...conv.messages.map((m) => {
@@ -185,6 +197,10 @@ export function useChat(settings: Settings) {
         role: "assistant",
         content: "",
         timestamp: Date.now(),
+        // Capture the model that's about to generate this response so the
+        // bubble can show a per-message badge. Falling back to "unknown"
+        // keeps rendering safe if settings.model is somehow blank.
+        model: settings.model || "unknown",
       };
 
       currentConversations = currentConversations.map((c) => {
@@ -201,50 +217,27 @@ export function useChat(settings: Settings) {
       abortControllerRef.current = abortController;
 
       try {
-        // Direct fetch from browser to user's enowxAI server (client-side)
-        const normalizedBaseUrl = settings.baseUrl.replace(/\/+$/, "");
-        const endpoint = `${normalizedBaseUrl}/chat/completions`;
-
-        // Build request body
-        const requestBody: Record<string, unknown> = {
-          model: settings.model,
-          messages: apiMessages,
-          stream: true,
-        };
-
-        // Apply mode-specific settings
-        // Determine if message has file attachments (needs more tokens for full analysis)
-        const hasFileAttachments = apiMessages.some(
-          (m: any) => Array.isArray(m.content) && m.content.some((p: any) => p.type === "text" && p.text?.startsWith("[File:"))
-        );
-        // Minimum tokens for file analysis to prevent cutoff
-        const fileMinTokens = hasFileAttachments ? 16384 : 0;
-
-        if (chatMode === "thinking") {
-          requestBody.temperature = 1;
-          requestBody.max_tokens = Math.max(16384, fileMinTokens, settings.maxTokens || 16384);
-          requestBody.thinking = { type: "enabled", budget_tokens: 10000 };
-          requestBody.include_reasoning = true;
-        } else if (chatMode === "deep-research") {
-          requestBody.temperature = 0.3;
-          requestBody.max_tokens = Math.max(32768, fileMinTokens, settings.maxTokens || 32768);
-          requestBody.thinking = { type: "enabled", budget_tokens: 20000 };
-          requestBody.include_reasoning = true;
-        } else {
-          requestBody.temperature = settings.temperature ?? 0.7;
-          // For file attachments, use at least 16384 tokens to ensure full analysis
-          requestBody.max_tokens = hasFileAttachments
-            ? Math.max(fileMinTokens, settings.maxTokens || 16384)
-            : (settings.maxTokens || 4096);
-        }
-
-        const response = await fetch(endpoint, {
+        // POST to our local edge proxy. The proxy forwards to the provider
+        // server-side, sidestepping CORS for arbitrary base URLs (OpenAI,
+        // Anthropic, OpenRouter, Groq, etc.). The API key travels in the
+        // JSON body to our own origin — never as a header to a third party
+        // from the browser.
+        const response = await fetch("/api/chat", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${settings.apiKey}`,
           },
-          body: JSON.stringify(requestBody),
+          body: JSON.stringify({
+            apiKey: settings.apiKey,
+            baseUrl: settings.baseUrl,
+            model: settings.model,
+            messages: apiMessages,
+            temperature: settings.temperature,
+            maxTokens: settings.maxTokens,
+            chatMode,
+            systemPrompt: systemContent || undefined,
+            stream: true,
+          }),
           signal: abortController.signal,
         });
 
@@ -366,7 +359,7 @@ export function useChat(settings: Settings) {
         abortControllerRef.current = null;
       }
     },
-    [activeConversationId, conversations, isLoading, settings]
+    [activeConversationId, conversations, isLoading, settings, serverManaged]
   );
 
   // Clear all conversations

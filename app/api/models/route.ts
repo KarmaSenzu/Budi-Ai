@@ -1,11 +1,18 @@
 import { NextRequest } from "next/server";
+import { resolveAIConfig } from "@/lib/server-config";
 
 export const runtime = "edge";
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
-    const { apiKey, baseUrl } = body;
+    const body = await req.json().catch(() => ({}));
+    const { apiKey: userApiKey, baseUrl: userBaseUrl } = body ?? {};
+
+    // Server-side override kalau env di-set, kalau tidak fallback ke body.
+    const { apiKey, baseUrl } = resolveAIConfig({
+      apiKey: userApiKey,
+      baseUrl: userBaseUrl,
+    });
 
     if (!apiKey || !baseUrl) {
       return new Response(
@@ -42,25 +49,31 @@ export async function POST(req: NextRequest) {
     }
 
     const data = await response.json();
-    
-    // OpenAI-compatible format: { data: [{ id: "model-name", ... }] }
-    let models: string[] = [];
-    
-    if (data.data && Array.isArray(data.data)) {
-      models = data.data
-        .map((m: any) => m.id || m.name || "")
-        .filter((id: string) => id.length > 0)
-        .sort((a: string, b: string) => a.localeCompare(b));
+
+    // Normalize various provider response shapes into { data: [{ id }] }.
+    // - OpenAI-compatible: { data: [{ id, ... }, ...] }
+    // - Some providers: a flat array of objects/strings
+    // - Anthropic-style: { models: [...] } (defensive)
+    let ids: string[] = [];
+
+    if (data && Array.isArray(data.data)) {
+      ids = data.data
+        .map((m: any) => m?.id || m?.name || (typeof m === "string" ? m : ""))
+        .filter((id: string) => id && id.length > 0);
     } else if (Array.isArray(data)) {
-      // Some providers return a flat array
-      models = data
-        .map((m: any) => (typeof m === "string" ? m : m.id || m.name || ""))
-        .filter((id: string) => id.length > 0)
-        .sort((a: string, b: string) => a.localeCompare(b));
+      ids = data
+        .map((m: any) => (typeof m === "string" ? m : m?.id || m?.name || ""))
+        .filter((id: string) => id && id.length > 0);
+    } else if (data && Array.isArray(data.models)) {
+      ids = data.models
+        .map((m: any) => (typeof m === "string" ? m : m?.id || m?.name || ""))
+        .filter((id: string) => id && id.length > 0);
     }
 
+    ids.sort((a, b) => a.localeCompare(b));
+
     return new Response(
-      JSON.stringify({ models }),
+      JSON.stringify({ data: ids.map((id) => ({ id })) }),
       { headers: { "Content-Type": "application/json" } }
     );
   } catch (error: unknown) {

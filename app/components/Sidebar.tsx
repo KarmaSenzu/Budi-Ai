@@ -56,7 +56,7 @@ export default function Sidebar({
       {/* Header */}
       <div className="p-4 border-b border-light-border dark:border-dark-border">
         <div className="flex items-center justify-between mb-4">
-          <h1 className="text-lg font-bold text-light-text dark:text-dark-text">🤖 Budi AI</h1>
+          <h1 className="text-lg font-bold text-light-text dark:text-dark-text">🤖 dmrxai</h1>
           <button
             onClick={() => setIsOpen(false)}
             className="lg:hidden p-1 rounded-lg hover:bg-light-hover dark:hover:bg-dark-hover text-light-muted dark:text-dark-muted"

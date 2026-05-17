@@ -1,0 +1,32 @@
+# Cloudflare Tunnel — credentials-based config untuk Dmr x AI
+#
+# Dipakai oleh container `cloudflared` (lihat docker-compose.yml service
+# `cloudflared` di folder ini). File ini di-bind-mount read-only ke
+# /etc/cloudflared di container.
+#
+# Mode credentials-file dipilih (bukan TUNNEL_TOKEN) supaya ingress rules
+# di bawah ini yang dipakai. Token-based tunnel mengambil ingress dari
+# Cloudflare dashboard remote, yang akan kosong kalau setup awal.
+#
+# Multi-hostname routing:
+# - dmrxai.devplay.online    → Next.js chat app
+# - 9router.devplay.online   → 9Router admin dashboard
+#
+# Tunnel yang sama meng-handle dua hostname. Setiap hostname butuh
+# CNAME record terpisah di Cloudflare (di-set via `cloudflared tunnel
+# route dns <tunnel> <hostname>` atau dashboard).
+
+tunnel: 118d08ad-88c0-416e-9b53-fc32f3381f0a
+credentials-file: /etc/cloudflared/credentials.json
+
+ingress:
+  # dmrxai chat UI
+  - hostname: dmrxai.devplay.online
+    service: http://app:3000
+
+  # 9Router admin dashboard (atur provider, lihat usage, kelola key)
+  - hostname: 9router.devplay.online
+    service: http://9router:20128
+
+  # Catch-all
+  - service: http_status:404

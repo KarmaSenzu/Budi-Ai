@@ -2,11 +2,29 @@ import { NextRequest } from "next/server";
 
 export const runtime = "edge";
 
-// Internal enowx server URL
-const AI_SERVER_URL = process.env.ENOWX_API_URL || "http://localhost:1430/v1";
+// Internal usage/dashboard server URL (configured via DMRXAI_API_URL).
+// Read at request time so docker-compose env injection works at runtime.
+function getUsageServerUrl(): string {
+  return (process.env.DMRXAI_API_URL || "").trim();
+}
 
 export async function POST(req: NextRequest) {
   try {
+    const AI_SERVER_URL = getUsageServerUrl();
+
+    // If usage tracking endpoint isn't configured (e.g. when AI is "managed
+    // by server" via 9router but no separate usage server is wired up),
+    // return 503 with a polite message instead of trying localhost:1430.
+    if (!AI_SERVER_URL) {
+      return new Response(
+        JSON.stringify({
+          error: "Usage tracking not configured",
+          configured: false,
+        }),
+        { status: 503, headers: { "Content-Type": "application/json" } }
+      );
+    }
+
     const body = await req.json();
     const { apiKey } = body;
 
@@ -17,7 +35,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Try to fetch usage/dashboard data from enowx server
+    // Try to fetch usage/dashboard data from configured server
     // Common endpoints: /usage, /dashboard, /me, /billing/usage
     const endpoints = ["/usage", "/dashboard", "/me"];
     let usageData = null;

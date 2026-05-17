@@ -13,7 +13,7 @@ import LoginPage from "@/components/LoginPage";
 
 export default function Home() {
   const { theme, toggleTheme, mounted } = useTheme();
-  const { settings, updateSettings, resetSettings, isConfigured, isLoaded } = useSettings();
+  const { settings, updateSettings, resetSettings, isConfigured, isLoaded, serverConfig } = useSettings();
   const {
     conversations,
     activeConversation,
@@ -28,7 +28,7 @@ export default function Home() {
     stopGeneration,
     clearAllConversations,
     setError,
-  } = useChat(settings);
+  } = useChat(settings, { serverManaged: serverConfig.aiConfigured });
 
   const [showSettings, setShowSettings] = useState(false);
   const [showModels, setShowModels] = useState(false);
@@ -42,40 +42,59 @@ export default function Home() {
     }
   }, [isLoaded, loadConversations]);
 
-  // Fetch models from user's server (client-side direct)
+  // Fetch available models via the local edge proxy. We POST apiKey+baseUrl
+  // in the JSON body so the request stays same-origin in the browser and
+  // CORS isn't a concern for arbitrary providers.
+  //
+  // In server-managed mode the server overrides body values with env, so we
+  // can fire the request even when local apiKey/baseUrl are empty — we just
+  // pass through whatever we have (or placeholders) and the server resolves.
   useEffect(() => {
-    if (isConfigured && settings.baseUrl && settings.apiKey) {
-      const normalizedUrl = settings.baseUrl.replace(/\/+$/, "");
-      fetch(`${normalizedUrl}/models`, {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${settings.apiKey}`,
-          "Content-Type": "application/json",
-        },
+    if (!isConfigured) return;
+    const haveLocalCreds = Boolean(settings.baseUrl && settings.apiKey);
+    if (!serverConfig.aiConfigured && !haveLocalCreds) return;
+
+    const controller = new AbortController();
+
+    fetch("/api/models", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        apiKey: settings.apiKey || "_server_managed_",
+        baseUrl: settings.baseUrl || serverConfig.aiBaseUrlHint || "_server_managed_",
+      }),
+      signal: controller.signal,
+    })
+      .then(async (res) => {
+        const json = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          throw new Error(json?.error || `Failed to fetch models (${res.status})`);
+        }
+        return json;
       })
-        .then((res) => res.json())
-        .then((data) => {
-          let models: string[] = [];
-          if (data.data && Array.isArray(data.data)) {
-            models = data.data
-              .map((m: any) => m.id || m.name || "")
-              .filter((id: string) => id.length > 0)
-              .sort();
-          } else if (Array.isArray(data)) {
-            models = data
-              .map((m: any) => (typeof m === "string" ? m : m.id || m.name || ""))
-              .filter((id: string) => id.length > 0)
-              .sort();
-          }
-          if (models.length > 0) {
-            setFetchedModels(models);
-          }
-        })
-        .catch(() => {
-          // Silently fail - will use hardcoded models
-        });
-    }
-  }, [isConfigured, settings.baseUrl, settings.apiKey]);
+      .then((data) => {
+        let models: string[] = [];
+        if (data?.data && Array.isArray(data.data)) {
+          models = data.data
+            .map((m: any) => (typeof m === "string" ? m : m?.id || m?.name || ""))
+            .filter((id: string) => id && id.length > 0);
+        } else if (Array.isArray(data)) {
+          models = data
+            .map((m: any) => (typeof m === "string" ? m : m?.id || m?.name || ""))
+            .filter((id: string) => id && id.length > 0);
+        }
+        setFetchedModels(models);
+      })
+      .catch((err) => {
+        if (err?.name === "AbortError") return;
+        // Don't surface this as a hard error — fall back to empty list so
+        // the hardcoded catalog still works. Log for debugging.
+        setFetchedModels([]);
+        console.warn("Model fetch failed:", err);
+      });
+
+    return () => controller.abort();
+  }, [isConfigured, settings.baseUrl, settings.apiKey, serverConfig.aiConfigured, serverConfig.aiBaseUrlHint]);
 
   // Prevent flash of unstyled content
   if (!mounted || !isLoaded) {
@@ -133,6 +152,7 @@ export default function Home() {
               isConfigured={isConfigured}
               onOpenSettings={() => setShowSettings(true)}
               onDismissError={() => setError(null)}
+              currentModel={settings.model}
             />
 
             {/* Chat Input */}
@@ -205,6 +225,7 @@ export default function Home() {
           updateSettings({ model });
           setShowModels(false);
         }}
+        fetchedModels={fetchedModels}
       />
     </div>
   );

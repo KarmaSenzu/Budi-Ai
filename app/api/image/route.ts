@@ -1,11 +1,28 @@
 import { NextRequest } from "next/server";
+import { resolveAIConfig } from "@/lib/server-config";
 
 export const runtime = "edge";
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { prompt, negativePrompt, model, size, quality, style, n, apiKey, baseUrl } = body;
+    const {
+      prompt,
+      negativePrompt,
+      model,
+      size,
+      quality,
+      style,
+      n,
+      apiKey: userApiKey,
+      baseUrl: userBaseUrl,
+    } = body;
+
+    // Server-side override kalau env di-set, kalau tidak fallback ke body.
+    const { apiKey, baseUrl } = resolveAIConfig({
+      apiKey: userApiKey,
+      baseUrl: userBaseUrl,
+    });
 
     // Validate required fields
     if (!prompt || !apiKey || !baseUrl || !model) {

@@ -25,3 +25,16 @@ yarn-error.log*
 # TypeScript
 *.tsbuildinfo
 next-env.d.ts
+
+# Docker compose env (secrets) — JANGAN commit
+.env
+
+# Cloudflare Tunnel credentials per-host
+cloudflared-config/credentials.json
+
+# Docker Compose project data (kalau nanti ada)
+docker-data/
+
+# 9Router runtime data (db, providers config — local only)
+9router-data/*
+!9router-data/.gitkeep
