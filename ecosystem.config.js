@@ -1,9 +1,9 @@
 module.exports = {
   apps: [{
-    name: 'chat-app',
+    name: 'dmrxai',
     script: 'npm',
     args: 'start',
-    cwd: '/home/ubuntu/chat-app',
+    cwd: '/home/ubuntu/dmrxai',
     env: {
       NODE_ENV: 'production',
       PORT: 3000

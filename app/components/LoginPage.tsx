@@ -25,18 +25,19 @@ export default function LoginPage({ onLogin, theme, onToggleTheme }: LoginPagePr
       return "Masukkan API Key Anda.";
     }
 
-    // Detect if user entered a license key instead of API Key
+    // Reject license/activation-code shape so users don't paste the wrong thing
     if (/^[A-Z]+-[A-Z0-9]{5}-[A-Z0-9]{5}-[A-Z0-9]{5}-[A-Z0-9]{5}$/i.test(trimmedKey)) {
-      return "Anda memasukkan Lisensi, bukan API Key. Masukkan lisensi Anda ke Dashboard terlebih dahulu untuk mendapatkan API Key.";
+      return "Itu sepertinya kode aktivasi/lisensi, bukan API Key. Tukarkan terlebih dahulu untuk mendapatkan API Key.";
     }
 
-    // Validate API Key format: must start with "enx-" followed by 64 hex characters
-    if (!/^enx-[a-f0-9]{64}$/.test(trimmedKey)) {
-      return "Format API Key tidak valid. API Key harus diawali dengan \"enx-\" diikuti 64 karakter hex.";
+    // Provider-agnostic minimum length check; the actual validity is verified
+    // by the connection itself (e.g. /models call) once the user submits.
+    if (trimmedKey.length < 8) {
+      return "API Key terlalu pendek.";
     }
 
     if (!trimmedUrl) {
-      return "Masukkan Base URL server enowxAI Anda.";
+      return "Masukkan Base URL provider Anda.";
     }
 
     // Validate URL format
@@ -72,17 +73,9 @@ export default function LoginPage({ onLogin, theme, onToggleTheme }: LoginPagePr
           <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center">
             <span className="text-sm font-bold text-white">B</span>
           </div>
-          <span className="text-lg font-bold text-light-text dark:text-dark-text">Budi AI</span>
+          <span className="text-lg font-bold text-light-text dark:text-dark-text">dmrxai</span>
         </div>
         <div className="flex items-center gap-2">
-          <a href="https://enowxlabs.com/apps/enowx-ai" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-light-accent/10 dark:bg-dark-accent/10 border border-light-accent/30 dark:border-dark-accent/30 text-light-accent dark:text-dark-accent hover:bg-light-accent/20 dark:hover:bg-dark-accent/20 transition-colors">
-            <Key size={12} />
-            <span>Claim Lisensi</span>
-          </a>
-          <a href="https://dr-budi.store" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-light-input dark:bg-dark-input border border-light-border dark:border-dark-border text-light-muted dark:text-dark-muted hover:text-light-text dark:hover:text-dark-text transition-colors">
-            <ShoppingCart size={12} />
-            <span>Beli Akun</span>
-          </a>
           <button onClick={onToggleTheme} className="p-2 rounded-lg hover:bg-light-hover dark:hover:bg-dark-hover text-light-muted dark:text-dark-muted transition-colors text-sm">
             {theme === "dark" ? "☀️" : "🌙"}
           </button>
@@ -97,7 +90,7 @@ export default function LoginPage({ onLogin, theme, onToggleTheme }: LoginPagePr
             <div>
               <h1 className="text-3xl lg:text-4xl font-bold text-light-text dark:text-dark-text mb-3">
                 Selamat Datang di{" "}
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-500 to-cyan-500">Budi AI</span>
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-500 to-cyan-500">dmrxai</span>
               </h1>
               <p className="text-light-muted dark:text-dark-muted text-sm leading-relaxed">
                 Platform AI chat yang powerful dengan berbagai model AI. Bisa digunakan dari device mana pun — cukup masukkan API Key Anda untuk mulai.
@@ -108,9 +101,9 @@ export default function LoginPage({ onLogin, theme, onToggleTheme }: LoginPagePr
             <div className="flex items-start gap-3 p-4 rounded-xl bg-emerald-500/5 border border-emerald-500/20">
               <Zap size={18} className="flex-shrink-0 text-emerald-500 mt-0.5" />
               <div>
-                <p className="text-sm font-medium text-emerald-600 dark:text-emerald-400">Budi AI Gratis untuk Digunakan!</p>
+                <p className="text-sm font-medium text-emerald-600 dark:text-emerald-400">dmrxai Gratis untuk Digunakan!</p>
                 <p className="text-xs text-light-muted dark:text-dark-muted mt-1 leading-relaxed">
-                  Anda bisa menggunakan Budi AI secara <strong className="text-light-text dark:text-dark-text">gratis</strong>. Semua model AI tersedia tanpa biaya, Anda hanya perlu memiliki akun untuk mengakses model AI yang diinginkan.
+                  Anda bisa menggunakan dmrxai secara <strong className="text-light-text dark:text-dark-text">gratis</strong>. Semua model AI tersedia tanpa biaya, Anda hanya perlu memiliki akun untuk mengakses model AI yang diinginkan.
                 </p>
               </div>
             </div>
@@ -149,9 +142,9 @@ export default function LoginPage({ onLogin, theme, onToggleTheme }: LoginPagePr
                     <span className="text-xs font-bold text-white">1</span>
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-light-text dark:text-dark-text">Claim Lisensi di Dashboard</p>
+                    <p className="text-sm font-medium text-light-text dark:text-dark-text">Dapatkan API Key</p>
                     <p className="text-xs text-light-muted dark:text-dark-muted mt-0.5">
-                      Masuk ke <a href="https://enowxlabs.com/apps/enowx-ai" target="_blank" rel="noopener noreferrer" className="text-light-accent dark:text-dark-accent hover:underline font-medium">Dashboard enowxAI</a>, lalu claim lisensi Anda. Setelah berhasil, copy lisensi yang Anda dapatkan.
+                      Dapatkan API Key dari provider AI yang Anda gunakan (OpenAI, Anthropic, OpenRouter, Groq, atau provider OpenAI-compatible lainnya).
                     </p>
                   </div>
                 </div>
@@ -160,26 +153,15 @@ export default function LoginPage({ onLogin, theme, onToggleTheme }: LoginPagePr
                     <span className="text-xs font-bold text-white">2</span>
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-light-text dark:text-dark-text">Dapatkan API Key</p>
+                    <p className="text-sm font-medium text-light-text dark:text-dark-text">Cek Token & API Key</p>
                     <p className="text-xs text-light-muted dark:text-dark-muted mt-0.5">
-                      Masukkan lisensi Anda ke halaman <a href="http://localhost:1431/" target="_blank" rel="noopener noreferrer" className="text-light-accent dark:text-dark-accent hover:underline font-medium">Login Cek Token & Cek API Key</a>, lalu copy API Key yang tersedia di dashboard Anda.
+                      Anda bisa mengecek token dan API Key Anda melalui <a href="http://localhost:1431/" target="_blank" rel="noopener noreferrer" className="text-light-accent dark:text-dark-accent hover:underline font-medium">halaman dashboard</a> yang dikonfigurasi oleh deployment Anda.
                     </p>
                   </div>
                 </div>
                 <div className="flex gap-3 p-3 rounded-xl bg-light-sidebar dark:bg-dark-sidebar border border-light-border dark:border-dark-border">
                   <div className="flex-shrink-0 w-7 h-7 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center">
                     <span className="text-xs font-bold text-white">3</span>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-light-text dark:text-dark-text">Belum Punya Akun?</p>
-                    <p className="text-xs text-light-muted dark:text-dark-muted mt-0.5">
-                      Jika Anda belum memiliki akun, bisa langsung membelinya di <a href="https://dr-budi.store" target="_blank" rel="noopener noreferrer" className="text-light-accent dark:text-dark-accent hover:underline font-medium">dr-budi.store</a>.
-                    </p>
-                  </div>
-                </div>
-                <div className="flex gap-3 p-3 rounded-xl bg-light-sidebar dark:bg-dark-sidebar border border-light-border dark:border-dark-border">
-                  <div className="flex-shrink-0 w-7 h-7 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center">
-                    <span className="text-xs font-bold text-white">4</span>
                   </div>
                   <div>
                     <p className="text-sm font-medium text-light-text dark:text-dark-text">Masuk & Mulai Gunakan AI</p>
@@ -221,7 +203,7 @@ export default function LoginPage({ onLogin, theme, onToggleTheme }: LoginPagePr
                     <div>
                       <p className="text-xs font-medium text-light-text dark:text-dark-text">Fungsi API Key</p>
                       <p className="text-[11px] text-light-muted dark:text-dark-muted mt-0.5 leading-relaxed">
-                        API Key berfungsi sebagai <strong className="text-light-text dark:text-dark-text">identitas Anda</strong> dalam menggunakan model AI. Semua penggunaan token dan percakapan akan tercatat di akun Anda sendiri melalui enowx Dashboard — bukan di server kami.
+                        API Key berfungsi sebagai <strong className="text-light-text dark:text-dark-text">identitas Anda</strong> dalam menggunakan model AI. Semua penggunaan token dan percakapan akan tercatat di akun Anda sendiri melalui dashboard provider Anda sendiri — bukan di server kami.
                       </p>
                     </div>
                   </div>
@@ -269,7 +251,7 @@ export default function LoginPage({ onLogin, theme, onToggleTheme }: LoginPagePr
                 <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-blue-500/20">
                   <Key size={24} className="text-white" />
                 </div>
-                <h2 className="text-xl font-bold text-light-text dark:text-dark-text">Masuk ke Budi AI</h2>
+                <h2 className="text-xl font-bold text-light-text dark:text-dark-text">Masuk ke dmrxai</h2>
                 <p className="text-xs text-light-muted dark:text-dark-muted mt-1">Masukkan API Key Anda untuk berinteraksi dengan model AI</p>
               </div>
 
@@ -280,10 +262,10 @@ export default function LoginPage({ onLogin, theme, onToggleTheme }: LoginPagePr
                     type="text"
                     value={baseUrl}
                     onChange={(e) => { setBaseUrl(e.target.value); setError(""); }}
-                    placeholder="http://your-vps-ip:1430/v1"
+                    placeholder="https://api.openai.com/v1"
                     className="w-full px-4 py-3 rounded-xl bg-light-input dark:bg-dark-input border border-light-border dark:border-dark-border text-light-text dark:text-dark-text focus:outline-none focus:border-light-accent dark:focus:border-dark-accent transition-colors font-mono text-sm"
                   />
-                  <p className="text-[10px] text-light-muted dark:text-dark-muted mt-1">Alamat server enowxAI Anda (contoh: http://ip-vps:1430/v1)</p>
+                  <p className="text-[10px] text-light-muted dark:text-dark-muted mt-1">URL endpoint provider Anda (contoh: https://api.openai.com/v1, https://openrouter.ai/api/v1, http://your-vps-ip:1430/v1)</p>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-light-text dark:text-dark-text mb-2">API Key</label>
@@ -292,7 +274,7 @@ export default function LoginPage({ onLogin, theme, onToggleTheme }: LoginPagePr
                       type={showKey ? "text" : "password"}
                       value={apiKey}
                       onChange={(e) => { setApiKey(e.target.value); setError(""); }}
-                      placeholder="Masukkan API Key Anda..."
+                      placeholder="sk-... / enx-... / your provider key"
                       className="w-full px-4 py-3 pr-10 rounded-xl bg-light-input dark:bg-dark-input border border-light-border dark:border-dark-border text-light-text dark:text-dark-text focus:outline-none focus:border-light-accent dark:focus:border-dark-accent transition-colors font-mono text-sm"
                       autoFocus
                     />
@@ -328,22 +310,12 @@ export default function LoginPage({ onLogin, theme, onToggleTheme }: LoginPagePr
               </div>
 
               <div className="space-y-2.5">
-                <a href="https://dr-budi.store" target="_blank" rel="noopener noreferrer" className="w-full flex items-center justify-between px-4 py-3 rounded-xl border border-light-border dark:border-dark-border hover:bg-light-hover dark:hover:bg-dark-hover transition-colors">
-                  <div className="flex items-center gap-2.5">
-                    <ShoppingCart size={16} className="text-emerald-500" />
-                    <div>
-                      <p className="text-sm font-medium text-light-text dark:text-dark-text">Beli Akun</p>
-                      <p className="text-[10px] text-light-muted dark:text-dark-muted">dr-budi.store</p>
-                    </div>
-                  </div>
-                  <ExternalLink size={14} className="text-light-muted dark:text-dark-muted" />
-                </a>
                 <a href="http://localhost:1431/" target="_blank" rel="noopener noreferrer" className="w-full flex items-center justify-between px-4 py-3 rounded-xl border border-light-border dark:border-dark-border hover:bg-light-hover dark:hover:bg-dark-hover transition-colors">
                   <div className="flex items-center gap-2.5">
                     <BarChart3 size={16} className="text-purple-500" />
                     <div>
                       <p className="text-sm font-medium text-light-text dark:text-dark-text">Login Cek Token & Cek API Key</p>
-                      <p className="text-[10px] text-light-muted dark:text-dark-muted">Dashboard enowx</p>
+                      <p className="text-[10px] text-light-muted dark:text-dark-muted">Dashboard</p>
                     </div>
                   </div>
                   <ExternalLink size={14} className="text-light-muted dark:text-dark-muted" />
@@ -353,9 +325,7 @@ export default function LoginPage({ onLogin, theme, onToggleTheme }: LoginPagePr
               <div className="flex items-start gap-2 p-3 rounded-lg bg-emerald-500/5 border border-emerald-500/20">
                 <CheckCircle2 size={14} className="flex-shrink-0 text-emerald-500 mt-0.5" />
                 <p className="text-[10px] text-light-muted dark:text-dark-muted leading-relaxed">
-                  <strong className="text-light-text dark:text-dark-text">Info:</strong> Budi AI gratis untuk digunakan. Anda hanya membutuhkan akun untuk mengakses model AI. Belum punya akun? Daftar di{" "}
-                  <a href="https://enowxlabs.com/apps/enowx-ai" target="_blank" rel="noopener noreferrer" className="text-emerald-600 dark:text-emerald-400 hover:underline font-medium">Dashboard enowxAI</a> atau beli di{" "}
-                  <a href="https://dr-budi.store" target="_blank" rel="noopener noreferrer" className="text-emerald-600 dark:text-emerald-400 hover:underline font-medium">dr-budi.store</a>.
+                  <strong className="text-light-text dark:text-dark-text">Info:</strong> dmrxai gratis untuk digunakan. Anda hanya membutuhkan API Key dari provider AI untuk mengakses model AI. Hubungi provider AI Anda untuk dukungan lebih lanjut.
                 </p>
               </div>
             </div>
@@ -364,7 +334,7 @@ export default function LoginPage({ onLogin, theme, onToggleTheme }: LoginPagePr
       </main>
 
       <footer className="px-6 py-4 border-t border-light-border dark:border-dark-border text-center">
-        <p className="text-[11px] text-light-muted dark:text-dark-muted">© 2024 Budi AI · Powered by enowxlabs</p>
+        <p className="text-[11px] text-light-muted dark:text-dark-muted">© 2026 dmrxai</p>
       </footer>
     </div>
   );

@@ -4,7 +4,8 @@ import { useEffect } from "react";
 
 export default function DashboardPage() {
   useEffect(() => {
-    // Redirect langsung ke dashboard enowx
+    // Redirect ke dashboard eksternal
+    // URL ini menunjuk ke dashboard eksternal yang dikonfigurasi oleh deployment.
     window.location.href = "http://localhost:1431/";
   }, []);
 

@@ -5,9 +5,9 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Budi AI - Chat & Image Generator",
-  description: "Budi AI - A powerful AI interface for chat and image generation. Bring your own API key.",
-  keywords: ["chat", "ai", "chatgpt", "openai", "api", "byok", "image generation", "dall-e", "budi ai"],
+  title: "dmrxai - Chat & Image Generator",
+  description: "dmrxai - A powerful AI interface for chat and image generation. Bring your own API key.",
+  keywords: ["chat", "ai", "chatgpt", "openai", "api", "byok", "image generation", "dall-e", "dmrxai"],
 };
 
 export default function RootLayout({

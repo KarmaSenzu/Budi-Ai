@@ -89,7 +89,7 @@ export default function ImageGenerator({
     if (image.b64Data) {
       const link = document.createElement("a");
       link.href = `data:image/png;base64,${image.b64Data}`;
-      link.download = `budi-ai-${image.id.slice(0, 8)}.png`;
+      link.download = `dmrxai-${image.id.slice(0, 8)}.png`;
       link.click();
     } else if (image.url) {
       window.open(image.url, "_blank");
